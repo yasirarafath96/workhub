@@ -44,9 +44,11 @@ export const getAllProjects = async (req, res) => {
   try {
     const userId = req.user.userId;
 
-    const projects = await Project.find({ createdBy: userId })
-      .populate("createdBy", "username email")
-      .populate("members", "username email");
+    // const projects = await Project.find({ createdBy: userId })
+    //   .populate("createdBy", "username email")
+    //   .populate("members", "username email");
+
+    const projects = await Project.find({})
 
     res.status(200).json(projects);
   } catch (err) {

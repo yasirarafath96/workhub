@@ -1,9 +1,26 @@
 "use client";
 
+import { GetAllProjects, GetAllUsers } from '@/api/queries/user';
+import ProjectsTable from '@/components/ProjectsTable';
 import { useAuth } from '@/context/authContext';
+import { Modal, Box, Typography, TextField, MenuItem, Button, Checkbox, FormControlLabel } from '@mui/material';
+import { toast } from 'sonner';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
+
+const modalStyle = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: 600,
+  bgcolor: 'background.paper',
+  boxShadow: 24,
+  borderRadius: 2,
+  p: 4,
+  maxHeight: '90vh',
+  overflowY: 'auto',
+};
 
 function Projects() {
   const { accessToken } = useAuth();
@@ -26,34 +43,31 @@ function Projects() {
 
     const fetchUsers = async () => {
       try {
-        const response = await axios.get('http://localhost:3000/api/users', {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
+        const { data } = await GetAllUsers();
 
-        console.log('users', response?.data?.users);
+        console.log('users', data?.users);
+        setUsers(data?.users);
 
-        setUsers(response.data.users);
+        // console.log('users', response?.data?.users);
+        // setUsers(response.data.users);
+
       } catch (error) {
         console.log('err', error);
       }
     };
 
     const fetchProjects = async () => {
+
       try {
-        const res = await axios.get('http://localhost:3000/api/projects', {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
+        const { data } = await GetAllProjects();
 
-        console.log('projects', res?.data);
+        console.log('projects', data);
+        setProjects(data);
 
+        // console.log('projects', res?.data);
+        // console.log('projects', res?.data);
+        // setProjects(res.data);
 
-
-
-        setProjects(res.data);
       } catch (err) {
         console.log('Failed to fetch projects:', err);
       }
@@ -118,15 +132,17 @@ function Projects() {
         members: [],
       });
 
-      setProjects((prev) => [...prev, response.data.project]);
+      setProjects((prev) => [...prev, response.data]);
     } catch (error) {
       toast.error('Failed to add project');
       console.log('error', error);
     }
   };
 
-
-  console.log("Type:", typeof projects);
+  const getUserNameById = (id) => {
+    const user = users.find((u) => u._id === id);
+    return user ? user.name : 'Unknown User';
+  };
 
   return (
     <div className="bg-amber-100 min-h-screen p-4 text-black">
@@ -143,132 +159,163 @@ function Projects() {
       </div>
 
       {/* Project Modal */}
-      {projectModal && (
-        <div className="bg-white shadow p-4 rounded-lg mb-6 text-black">
-          <h2 className="text-xl font-semibold mb-3">Add Project</h2>
+      <Modal
+        open={projectModal}
+        onClose={() => setProjectModal(false)}
+        aria-labelledby="add-project-title"
+      >
+        <Box sx={{ ...modalStyle, color: 'black' }}>
+          <Typography id="add-project-title" variant="h6" sx={{ mb: 2 }}>
+            Add Project
+          </Typography>
 
-          <input
-            type="text"
+          <TextField
+            fullWidth
+            label="Project Name"
             name="name"
-            placeholder="Project Name"
             value={form.name}
             onChange={handleInputChange}
-            className="w-full p-2 border rounded mb-2 text-black"
+            InputLabelProps={{ sx: { color: 'black' } }}
+            sx={{ mb: 2, input: { color: 'black' } }}
           />
-          <textarea
+
+          <TextField
+            fullWidth
+            multiline
+            rows={3}
+            label="Description"
             name="description"
-            placeholder="Description"
             value={form.description}
             onChange={handleInputChange}
-            className="w-full p-2 border rounded mb-2 text-black"
-          ></textarea>
+            sx={{ mb: 2 }}
+          />
 
-          <select
+          <TextField
+            fullWidth
+            select
+            label="Status"
             name="status"
             value={form.status}
             onChange={handleInputChange}
-            className="w-full p-2 border rounded mb-2 text-black"
+            sx={{ mb: 2 }}
           >
-            <option value="">Select Status</option>
-            <option value="pending">Pending</option>
-            <option value="in-progress">In Progress</option>
-            <option value="completed">Completed</option>
-            <option value="on-hold">On Hold</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
+            <MenuItem value="">Select Status</MenuItem>
+            <MenuItem value="pending">Pending</MenuItem>
+            <MenuItem value="in-progress">In Progress</MenuItem>
+            <MenuItem value="completed">Completed</MenuItem>
+            <MenuItem value="on-hold">On Hold</MenuItem>
+            <MenuItem value="cancelled">Cancelled</MenuItem>
+          </TextField>
 
-          <select
+          <TextField
+            fullWidth
+            select
+            label="Priority"
             name="priority"
             value={form.priority}
             onChange={handleInputChange}
-            className="w-full p-2 border rounded mb-2 text-black"
+            sx={{ mb: 2 }}
           >
-            <option value="">Select Priority</option>
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-            <option value="urgent">Urgent</option>
-          </select>
+            <MenuItem value="">Select Priority</MenuItem>
+            <MenuItem value="low">Low</MenuItem>
+            <MenuItem value="medium">Medium</MenuItem>
+            <MenuItem value="high">High</MenuItem>
+            <MenuItem value="urgent">Urgent</MenuItem>
+          </TextField>
 
-          <div className="grid grid-cols-2 gap-4 mb-2">
-            <input
+          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+            <TextField
               type="date"
+              label="Start Date"
               name="startDate"
+              InputLabelProps={{ shrink: true }}
               value={form.startDate}
               onChange={handleInputChange}
-              className="p-2 border rounded text-black"
+              fullWidth
             />
-            <input
+            <TextField
               type="date"
+              label="End Date"
               name="endDate"
+              InputLabelProps={{ shrink: true }}
               value={form.endDate}
               onChange={handleInputChange}
-              className="p-2 border rounded text-black"
+              fullWidth
             />
-          </div>
+          </Box>
 
-          <div className="mb-4">
-            <p className="font-medium mb-2">Select Members:</p>
-            <div className="grid grid-cols-2 gap-2 text-black">
-              {users.map((user) => (
-                <label key={user._id} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
+          <Typography variant="subtitle1" sx={{ mb: 1, color: 'black' }}>
+            Select Members
+          </Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mb: 2 }}>
+            {users.map((user) => (
+              <FormControlLabel
+                sx={{ color: 'black' }}
+                key={user._id}
+                control={
+                  <Checkbox
                     checked={form.members.includes(user._id)}
                     onChange={() => handleMemberToggle(user._id)}
                   />
-                  <span>{user.name}</span>
-                </label>
-              ))}
-            </div>
-          </div>
+                }
+                label={user.name}
+              />
+            ))}
+          </Box>
 
-          <div className="flex justify-end gap-2">
-            <button className="bg-gray-300 px-4 py-2 rounded text-black" onClick={() => setProjectModal(false)}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+            <Button variant="outlined" onClick={() => setProjectModal(false)}>
               Cancel
-            </button>
-            <button className="bg-green-500 text-white px-4 py-2 rounded" onClick={handleAddProject}>
+            </Button>
+            <Button variant="contained" color="success" onClick={handleAddProject}>
               Save
-            </button>
-          </div>
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
+
+      {/* <div className='flex-col w-full bg-white'>
+        <div className='flex-row gap-2 flex justify-between mb-1 bg-blue-300 p-3'>
+          <p className='flex-[1]' >Name</p>
+          <p className='flex-[1]' >Description</p>
+          <p className='flex-[1]' >Status</p>
+          <p className='flex-[1]' >Priority</p>
+          <p className='flex-[1]' >Members</p>
+          <p className='flex-[1]' >StartDate</p>
+          <p className='flex-[1]' >EndDate</p>
         </div>
-      )}
 
-      {/* Project List */}
-      {projects ? (
-        projects.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {projects.map((project) => {
-              const memberNames = users
-                .filter((user) => project.members.includes(user._id))
-                .map((user) => user.name)
-                .join(', ');
+        {projects.map((item) => {
+          return (
+            <div
+              key={item._id}
+              className="flex-row gap-2 flex justify-between py-3 bg-blue-400 p-3"
+            >
+              <p className='flex-[1]'>{item.name}</p>
+              <p className='flex-[1]'>{item.description}</p>
+              <p className='flex-[1]'>{item.status}</p>
+              <p className='flex-[1]'>{item.priority}</p>
+              <select
+                name="priority"
+                value={form.priority}
+                // onChange={handleInputChange}
+                className="w-full p-2 border rounded text-black flex-[1]"
+              >
+                {item.members.map((item) => <div>
+                  <p>
+                    <option value={getUserNameById(item)}>{getUserNameById(item)}</option>
 
-              return (
-                <div
-                  key={project._id}
-                  className="bg-white text-black p-4 rounded shadow"
-                >
-                  <h3 className="text-xl font-bold mb-2">{project.name}</h3>
-                  <p className="mb-2 text-gray-700">{project.description}</p>
-                  <div className="text-sm text-gray-600 mb-2">
-                    <p>Status: <span className="font-medium">{project.status}</span></p>
-                    <p>Priority: <span className="font-medium">{project.priority}</span></p>
-                    <p>Duration: {project.startDate} → {project.endDate}</p>
-                    <p>Members: {memberNames || 'None'}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p>No projects found.</p>
-        )
-      ) : (
-        <p>Loading...</p>
-      )}
+                  </p>
+                </div>)}
+              </select>
+              <p className='flex-[1]'>{new Date(item.startDate).toLocaleDateString()}</p>
+              <p className='flex-[1]'>{new Date(item.endDate).toLocaleDateString()}</p>
+            </div>
+          );
+        })}
+      </div> */}
 
-
+      <ProjectsTable projects={projects} users={users} />
     </div>
 
   );
